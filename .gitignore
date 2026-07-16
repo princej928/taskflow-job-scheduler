@@ -1,0 +1,15 @@
+# Dependencies and generated output
+node_modules/
+dist/
+.next/
+coverage/
+
+# Environment and local files
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Tooling
+*.tsbuildinfo
+*.log

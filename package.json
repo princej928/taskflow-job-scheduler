@@ -1,0 +1,20 @@
+{
+  "name": "taskflow-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:docker": "docker-compose up -d",
+    "db:generate": "npm run db:generate --workspace=packages/db",
+    "db:migrate": "npm run db:migrate --workspace=packages/db",
+    "db:studio": "npm run db:studio --workspace=packages/db",
+    "build": "npm run build --workspaces --if-present",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:scheduler": "npm run dev --workspace=apps/scheduler",
+    "dev:worker": "npm run dev --workspace=apps/worker",
+    "dev:dashboard": "npm run dev --workspace=apps/dashboard"
+  }
+}

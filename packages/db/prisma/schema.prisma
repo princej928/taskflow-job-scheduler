@@ -1,0 +1,69 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Job {
+  id              String         @id @default(cuid())
+  type            String         // e.g. "send-email", "generate-report"
+  payload         Json
+  status          JobStatus      @default(PENDING)
+  runAt           DateTime       // when it should first run
+  cronExpr        String?        // set if recurring
+  maxAttempts     Int            @default(3)
+  attempts        Int            @default(0)
+  idempotencyKey  String?        @unique
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  logs            ExecutionLog[]
+  outboxEvents    QueueOutbox[]
+}
+
+// A durable record of work that must be published to BullMQ.  Creating this
+// inside the same transaction as claiming a job makes a scheduler crash
+// recoverable: an unpublished row is simply published on a later poll.
+model QueueOutbox {
+  id          String       @id @default(cuid())
+  jobId       String
+  job         Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  queueJobId  String       @unique
+  scheduledAt DateTime
+  status      OutboxStatus @default(PENDING)
+  publishedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([status, createdAt])
+}
+
+enum OutboxStatus {
+  PENDING
+  PUBLISHED
+  DEAD_LETTER
+}
+
+enum JobStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  SUCCESS
+  FAILED
+  DEAD_LETTER
+  CANCELLED
+}
+
+model ExecutionLog {
+  id          String   @id @default(cuid())
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  attempt     Int
+  status      String   // SUCCESS | FAILED
+  output      Json?
+  error       String?
+  startedAt   DateTime
+  finishedAt  DateTime
+}
