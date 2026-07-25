@@ -4,8 +4,17 @@ import { prisma, Job, JobStatus } from '@taskflow/db';
 import { QUEUE_NAME, getRedisConnectionOptions } from '@taskflow/queue';
 import parser from 'cron-parser';
 
-dotenv.config();
 
+
+import path from 'path';
+
+dotenv.config({
+  path: path.resolve(process.cwd(), "../..", ".env"),
+});
+
+console.log("CWD =", process.cwd());
+console.log("DATABASE_URL =", process.env.DATABASE_URL);
+console.log("REDIS_HOST =", process.env.REDIS_HOST);
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS || '5000', 10);
 const PUBLISH_BATCH_SIZE = 100;
 const connection = getRedisConnectionOptions() as any;
@@ -79,32 +88,40 @@ async function publishOutbox() {
     }
 
     try {
-      await jobsQueue.add(event.job.type, {
-        jobId: event.job.id,
-        outboxId: event.id,
-        type: event.job.type,
-        payload: event.job.payload,
-        attempt: 1,
-        isRecurring: Boolean(event.job.cronExpr),
-        idempotencyKey: event.job.idempotencyKey,
-      }, {
-        jobId: event.queueJobId,
-        attempts: event.job.maxAttempts,
-        backoff: { type: 'exponential', delay: 5000 },
-        // Retain completed IDs so a replay after the tiny add/mark-published
-        // crash window is deduplicated by BullMQ.
-        removeOnComplete: { age: 86400 },
-        removeOnFail: false,
-      });
-      await prisma.queueOutbox.update({
-        where: { id: event.id },
-        data: { status: 'PUBLISHED', publishedAt: new Date() },
-      });
-    } catch (error: any) {
-      // Keep the event PENDING. The next poll retries publication, which is
-      // safe because queueJobId is deterministic.
-      console.error(`Failed to publish outbox event ${event.id}:`, error.message);
+  console.log("Publishing job:", event.job.id);
+
+  await jobsQueue.add(
+    event.job.type,
+    {
+      jobId: event.job.id,
+      outboxId: event.id,
+      type: event.job.type,
+      payload: event.job.payload,
+      attempt: 1,
+      isRecurring: Boolean(event.job.cronExpr),
+      idempotencyKey: event.job.idempotencyKey,
+    },
+    {
+      jobId: event.queueJobId,
+      attempts: event.job.maxAttempts,
+      backoff: { type: 'exponential', delay: 5000 },
+      removeOnComplete: { age: 86400 },
+      removeOnFail: false,
     }
+  );
+
+  console.log("Published job:", event.job.id);
+
+  await prisma.queueOutbox.update({
+    where: { id: event.id },
+    data: {
+      status: 'PUBLISHED',
+      publishedAt: new Date(),
+    },
+  });
+} catch (error: any) {
+  console.error(`Failed to publish outbox event ${event.id}:`, error.message);
+} 
   }
 }
 

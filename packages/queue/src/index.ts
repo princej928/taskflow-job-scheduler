@@ -7,17 +7,14 @@ export const getRedisConnectionOptions = (): RedisOptions => {
   return {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
-    maxRetriesPerRequest: null, // Required by BullMQ
+    password: process.env.REDIS_PASSWORD,
+    tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
+    maxRetriesPerRequest: null,
   };
 };
 
 export const getRedisConnection = () => {
-  const options = getRedisConnectionOptions();
-  return new Redis({
-    host: options.host,
-    port: options.port,
-    maxRetriesPerRequest: null,
-  });
+  return new Redis(getRedisConnectionOptions());
 };
 
 export interface JobQueueData {

@@ -3,9 +3,16 @@ import { Worker, Job as BullMqJob } from 'bullmq';
 import { prisma } from '@taskflow/db';
 import { QUEUE_NAME, getRedisConnectionOptions, JobQueueData } from '@taskflow/queue';
 import { handlers } from './handlers';
+import path from "path";
 
-dotenv.config();
 
+dotenv.config({
+  path: path.resolve(process.cwd(), "../..", ".env"),
+});
+
+console.log("CWD =", process.cwd());
+console.log("DATABASE_URL =", process.env.DATABASE_URL);
+console.log("REDIS_HOST =", process.env.REDIS_HOST);
 const connection = getRedisConnectionOptions() as any;
 
 console.log('Worker Service starting...');
@@ -24,6 +31,9 @@ const worker = new Worker(
       console.log(`[Worker] Skipping cancelled or deleted job ${data.jobId}.`);
       return;
     }
+    
+
+
 
     // A recurring parent job remains PENDING for its next occurrence. Its
     // execution history is captured in logs, while one-off jobs expose their
@@ -142,6 +152,25 @@ const worker = new Worker(
     concurrency: parseInt(process.env.WORKER_CONCURRENCY || '5', 10),
   }
 );
+worker.on("ready", () => {
+  console.log("✅ Worker connected to Redis");
+});
+
+worker.on("active", (job) => {
+  console.log("🔥 Active:", job.id, job.name);
+});
+
+worker.on("completed", (job) => {
+  console.log("✅ Completed:", job.id);
+});
+
+worker.on("error", (err) => {
+  console.error("❌ Worker error:", err);
+});
+
+worker.on("failed", (job, err) => {
+  console.log(`❌ Failed: ${job?.id} - ${err.message}`);
+});
 
 worker.on('failed', (job, err) => {
   if (job) {
