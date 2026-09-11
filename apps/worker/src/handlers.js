@@ -1,13 +1,5 @@
-import { JobQueueData } from '@taskflow/queue';
-
-interface MockHandlerOptions {
-  minDelayMs?: number;
-  maxDelayMs?: number;
-  errorRate?: number; // 0 to 1
-}
-
-async function simulateWork(name: string, payload: any) {
-  const options: MockHandlerOptions = payload._mockOptions || {};
+async function simulateWork(name, payload) {
+  const options = payload._mockOptions || {};
   const minDelay = options.minDelayMs !== undefined ? options.minDelayMs : 1000;
   const maxDelay = options.maxDelayMs !== undefined ? options.maxDelayMs : 3000;
   const errorRate = options.errorRate !== undefined ? options.errorRate : 0.3; // Default 30% failure
@@ -22,7 +14,7 @@ async function simulateWork(name: string, payload: any) {
   }
 }
 
-export const handlers: Record<string, (data: JobQueueData) => Promise<any>> = {
+export const handlers = {
   'send-email': async (data) => {
     const payload = data.payload;
     if (!payload.to || !payload.subject || !payload.body) {

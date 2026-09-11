@@ -1,7 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import jobsRouter from './routes/jobs';
+import { prisma } from '@taskflow/db';
+import jobsRouter from './routes/jobs.js';
 
 dotenv.config();
 
@@ -13,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // API Key authentication middleware
-const apiKeyAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const apiKeyAuth = (req, res, next) => {
   const apiKey = req.headers['x-api-key'];
   if (!apiKey || apiKey !== apiKeyValue) {
     return res.status(401).json({ error: 'Unauthorized: Invalid or missing API key' });
@@ -29,7 +30,6 @@ app.get('/health', (req, res) => {
 });
 
 // Stats endpoint (authenticated)
-import { prisma } from '@taskflow/db';
 app.get('/api/stats', apiKeyAuth, async (req, res) => {
   try {
     const counts = await prisma.job.groupBy({
@@ -39,7 +39,7 @@ app.get('/api/stats', apiKeyAuth, async (req, res) => {
       },
     });
 
-    const statsMap: Record<string, number> = {
+    const statsMap = {
       PENDING: 0,
       QUEUED: 0,
       RUNNING: 0,
@@ -49,7 +49,7 @@ app.get('/api/stats', apiKeyAuth, async (req, res) => {
       CANCELLED: 0,
     };
 
-    counts.forEach((group: any) => {
+    counts.forEach((group) => {
       statsMap[group.status] = group._count._all;
     });
 
@@ -66,7 +66,7 @@ app.get('/api/stats', apiKeyAuth, async (req, res) => {
         failureRate: parseFloat(failureRate.toFixed(2)),
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });

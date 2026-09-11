@@ -2,35 +2,15 @@
 
 import { useState, useEffect } from 'react';
 
-interface Job {
-  id: string;
-  type: string;
-  payload: any;
-  status: string;
-  runAt: string;
-  cronExpr: string | null;
-  maxAttempts: number;
-  attempts: number;
-  idempotencyKey: string | null;
-  createdAt: string;
-}
-
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 export default function JobList() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [jobs, setJobs] = useState([]);
+  const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
+  const [message, setMessage] = useState(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'taskflow_secret_key';
@@ -52,7 +32,7 @@ export default function JobList() {
       const data = await res.json();
       setJobs(data.jobs);
       setPagination(data.pagination);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err.message);
     } finally {
       setLoading(false);
@@ -65,7 +45,7 @@ export default function JobList() {
     return () => clearInterval(interval);
   }, [page, statusFilter, typeFilter, search]);
 
-  const handleCancel = async (id: string) => {
+  const handleCancel = async (id) => {
     if (!confirm('Are you sure you want to cancel this pending job?')) return;
     try {
       const res = await fetch(`${API_URL}/api/jobs/${id}`, {
@@ -80,12 +60,12 @@ export default function JobList() {
 
       setMessage({ text: 'Job cancelled successfully.', isError: false });
       fetchJobs();
-    } catch (err: any) {
+    } catch (err) {
       setMessage({ text: err.message, isError: true });
     }
   };
 
-  const handleRetry = async (id: string) => {
+  const handleRetry = async (id) => {
     try {
       const res = await fetch(`${API_URL}/api/jobs/${id}/retry`, {
         method: 'POST',
@@ -99,7 +79,7 @@ export default function JobList() {
 
       setMessage({ text: 'Retry triggered successfully. Job is back to pending.', isError: false });
       fetchJobs();
-    } catch (err: any) {
+    } catch (err) {
       setMessage({ text: err.message, isError: true });
     }
   };

@@ -1,10 +1,9 @@
 {
   "name": "@taskflow/db",
   "version": "1.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "main": "src/index.js",
   "scripts": {
-    "build": "tsc",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev"
   },
@@ -12,7 +11,6 @@
     "@prisma/client": "^5.10.0"
   },
   "devDependencies": {
-    "prisma": "^5.10.0",
-    "typescript": "^5.0.0"
+    "prisma": "^5.10.0"
   }
 }

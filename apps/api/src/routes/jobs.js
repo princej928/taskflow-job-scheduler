@@ -1,11 +1,11 @@
-import { Router, Request, Response } from 'express';
-import { prisma, JobStatus } from '@taskflow/db';
+import { Router } from 'express';
+import { prisma } from '@taskflow/db';
 import parser from 'cron-parser';
 
 const router = Router();
 
 // POST /api/jobs - Create a job
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req, res) => {
   const { type, payload, runAt, cronExpr, maxAttempts, idempotencyKey } = req.body;
   try {
     if (!type) {
@@ -58,11 +58,9 @@ router.post('/', async (req: Request, res: Response) => {
     });
 
     res.status(201).json(job);
-  } catch (error: any) {
+  } catch (error) {
     if (error.code === 'P2002') {
-      // A concurrent request may pass the initial lookup before the unique
-      // constraint is written. Return the original resource, preserving the
-      // idempotency contract instead of exposing a transient 409.
+      // Return existing job if idempotency collision occurs
       const existingJob = idempotencyKey
         ? await prisma.job.findUnique({ where: { idempotencyKey } })
         : null;
@@ -74,20 +72,20 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // GET /api/jobs - List jobs (paginated & filtered)
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req, res) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const status = req.query.status as string;
-    const type = req.query.type as string;
-    const search = req.query.search as string;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const status = req.query.status;
+    const type = req.query.type;
+    const search = req.query.search;
 
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where = {};
 
     if (status) {
-      where.status = status as JobStatus;
+      where.status = status;
     }
 
     if (type) {
@@ -120,13 +118,13 @@ router.get('/', async (req: Request, res: Response) => {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // GET /api/jobs/:id - Get job detail + logs
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async (req, res) => {
   try {
     const job = await prisma.job.findUnique({
       where: { id: req.params.id },
@@ -142,13 +140,13 @@ router.get('/:id', async (req: Request, res: Response) => {
     }
 
     res.json(job);
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // POST /api/jobs/:id/retry - Manually retry a failed/DLQ job
-router.post('/:id/retry', async (req: Request, res: Response) => {
+router.post('/:id/retry', async (req, res) => {
   try {
     const job = await prisma.job.findUnique({
       where: { id: req.params.id },
@@ -172,13 +170,13 @@ router.post('/:id/retry', async (req: Request, res: Response) => {
     });
 
     res.json(updatedJob);
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // DELETE /api/jobs/:id - Cancel a pending job
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req, res) => {
   try {
     const job = await prisma.job.findUnique({
       where: { id: req.params.id },
@@ -200,13 +198,13 @@ router.delete('/:id', async (req: Request, res: Response) => {
     });
 
     res.json(updatedJob);
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // GET /api/jobs/:id/logs - Get execution logs for a job
-router.get('/:id/logs', async (req: Request, res: Response) => {
+router.get('/:id/logs', async (req, res) => {
   try {
     const logs = await prisma.executionLog.findMany({
       where: { jobId: req.params.id },
@@ -214,7 +212,7 @@ router.get('/:id/logs', async (req: Request, res: Response) => {
     });
 
     res.json(logs);
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });

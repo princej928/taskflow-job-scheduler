@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
@@ -7,16 +6,12 @@ const inter = Inter({
   variable: "--font-sans",
 });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "TaskFlow — Distributed Job Scheduling Dashboard",
   description: "Manage, monitor, and retry background jobs and recurring tasks.",
 };
 
-export default function RootLayout({
-  children,
-  }: Readonly<{
-    children: React.ReactNode;
-  }>) {
+export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased dark`}>
       <body className="h-full bg-slate-950 text-slate-50 font-sans flex flex-col md:flex-row overflow-hidden">

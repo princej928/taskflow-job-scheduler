@@ -1,6 +1,6 @@
 # TaskFlow — Distributed Job Scheduling Platform
 
-TaskFlow is a distributed job-processing platform built as a TypeScript monorepo. It accepts one-off and recurring jobs, schedules them reliably, executes them through background workers, and exposes a dashboard for monitoring and recovery.
+TaskFlow is a distributed job-processing platform built as a modern JavaScript monorepo. It accepts one-off and recurring jobs, schedules them reliably, executes them through background workers, and exposes a dashboard for monitoring and recovery.
 
 ## Architecture
 
@@ -39,7 +39,7 @@ This design provides **at-least-once delivery**: an operation can be retried aft
 
 ## Tech stack
 
-Node.js · TypeScript · Express · PostgreSQL · Prisma · Redis · BullMQ · Next.js · Docker Compose · PM2
+Node.js · JavaScript (ES Modules) · Express · PostgreSQL · Prisma · Redis · BullMQ · Next.js · Docker Compose · PM2
 
 ## Repository layout
 
@@ -52,7 +52,7 @@ apps/
 packages/
   db/           Prisma schema and database client
   queue/        BullMQ and Redis configuration
-  shared-types/ Shared TypeScript contracts
+  shared-types/ Shared JavaScript constants
 ```
 
 ## Run locally

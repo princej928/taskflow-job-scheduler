@@ -1,9 +1,8 @@
-import { Queue } from 'bullmq';
-import Redis, { RedisOptions } from 'ioredis';
+import Redis from 'ioredis';
 
 export const QUEUE_NAME = 'jobs';
 
-export const getRedisConnectionOptions = (): RedisOptions => {
+export const getRedisConnectionOptions = () => {
   return {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
@@ -16,13 +15,3 @@ export const getRedisConnectionOptions = (): RedisOptions => {
 export const getRedisConnection = () => {
   return new Redis(getRedisConnectionOptions());
 };
-
-export interface JobQueueData {
-  jobId: string;
-  outboxId: string;
-  type: string;
-  payload: any;
-  attempt: number;
-  isRecurring: boolean;
-  idempotencyKey?: string | null;
-}

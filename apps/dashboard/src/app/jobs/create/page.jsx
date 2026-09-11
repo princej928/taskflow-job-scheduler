@@ -33,18 +33,18 @@ export default function CreateJob() {
   const [syncMethod, setSyncMethod] = useState('POST');
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'taskflow_secret_key';
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     // Build payload based on type
-    let payloadData: any = {};
+    let payloadData = {};
     if (type === 'send-email') {
       payloadData = { to: emailTo, subject: emailSubject, body: emailBody };
     } else if (type === 'generate-report') {
@@ -61,7 +61,7 @@ export default function CreateJob() {
     };
 
     // Build overall API body
-    const reqBody: any = {
+    const reqBody = {
       type,
       payload: payloadData,
       maxAttempts: parseInt(maxAttempts.toString(), 10),
@@ -90,7 +90,7 @@ export default function CreateJob() {
       }
 
       router.push('/jobs');
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'An error occurred.');
       setLoading(false);
     }

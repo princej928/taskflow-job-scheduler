@@ -3,40 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
-interface ExecutionLog {
-  id: string;
-  attempt: number;
-  status: 'SUCCESS' | 'FAILED';
-  output: any;
-  error: string | null;
-  startedAt: string;
-  finishedAt: string;
-}
-
-interface Job {
-  id: string;
-  type: string;
-  payload: any;
-  status: string;
-  runAt: string;
-  cronExpr: string | null;
-  maxAttempts: number;
-  attempts: number;
-  idempotencyKey: string | null;
-  createdAt: string;
-  updatedAt: string;
-  logs: ExecutionLog[];
-}
-
 export default function JobDetails() {
   const params = useParams();
   const router = useRouter();
-  const id = params.id as string;
+  const id = params.id;
 
-  const [job, setJob] = useState<Job | null>(null);
+  const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'taskflow_secret_key';
@@ -56,7 +31,7 @@ export default function JobDetails() {
       const data = await res.json();
       setJob(data);
       setError(null);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'An error occurred.');
     } finally {
       setLoading(false);
@@ -84,7 +59,7 @@ export default function JobDetails() {
 
       setMessage({ text: 'Manual retry queued successfully!', isError: false });
       fetchJobDetails();
-    } catch (err: any) {
+    } catch (err) {
       setMessage({ text: err.message, isError: true });
     }
   };
@@ -105,7 +80,7 @@ export default function JobDetails() {
 
       setMessage({ text: 'Job cancelled successfully.', isError: false });
       fetchJobDetails();
-    } catch (err: any) {
+    } catch (err) {
       setMessage({ text: err.message, isError: true });
     }
   };
@@ -258,9 +233,9 @@ export default function JobDetails() {
 
           {/* Chronological logs */}
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-white">Execution Logs ({job.logs.length})</h2>
+            <h2 className="text-lg font-bold text-white">Execution Logs ({(job.logs || []).length})</h2>
 
-            {job.logs.length === 0 ? (
+            {(!job.logs || job.logs.length === 0) ? (
               <div className="p-8 border border-dashed border-slate-800 bg-slate-950/20 text-center rounded-2xl">
                 <svg className="w-10 h-10 text-slate-700 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

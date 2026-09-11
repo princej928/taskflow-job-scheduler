@@ -2,29 +2,11 @@
 
 import { useState, useEffect } from 'react';
 
-interface StatsResponse {
-  counts: Record<string, number>;
-  metrics: {
-    totalJobs: number;
-    failureRate: number;
-  };
-}
-
-interface Job {
-  id: string;
-  type: string;
-  status: string;
-  attempts: number;
-  maxAttempts: number;
-  runAt: string;
-  createdAt: string;
-}
-
 export default function DashboardHome() {
-  const [stats, setStats] = useState<StatsResponse | null>(null);
-  const [recentJobs, setRecentJobs] = useState<Job[]>([]);
+  const [stats, setStats] = useState(null);
+  const [recentJobs, setRecentJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'taskflow_secret_key';
@@ -49,7 +31,7 @@ export default function DashboardHome() {
       setRecentJobs(jobsData.jobs);
 
       setError(null);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'An error occurred connecting to the backend service.');
     } finally {
       setLoading(false);
@@ -83,8 +65,8 @@ export default function DashboardHome() {
     CANCELLED: 0,
   };
 
-  const totalJobs = stats?.metrics.totalJobs || 0;
-  const failureRate = stats?.metrics.failureRate || 0;
+  const totalJobs = stats?.metrics?.totalJobs || 0;
+  const failureRate = stats?.metrics?.failureRate || 0;
   const successRate = totalJobs > 0 ? (100 - failureRate).toFixed(1) : 100;
 
   return (

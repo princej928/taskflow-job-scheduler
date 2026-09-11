@@ -1,26 +1,22 @@
 import dotenv from 'dotenv';
-import { Worker, Job as BullMqJob } from 'bullmq';
+import { Worker } from 'bullmq';
 import { prisma } from '@taskflow/db';
-import { QUEUE_NAME, getRedisConnectionOptions, JobQueueData } from '@taskflow/queue';
-import { handlers } from './handlers';
-import path from "path";
-
+import { QUEUE_NAME, getRedisConnectionOptions } from '@taskflow/queue';
+import { handlers } from './handlers.js';
+import path from 'path';
 
 dotenv.config({
-  path: path.resolve(process.cwd(), "../..", ".env"),
+  path: path.resolve(process.cwd(), "../../.env"),
 });
 
-console.log("CWD =", process.cwd());
-console.log("DATABASE_URL =", process.env.DATABASE_URL);
-console.log("REDIS_HOST =", process.env.REDIS_HOST);
-const connection = getRedisConnectionOptions() as any;
+const connection = getRedisConnectionOptions();
 
 console.log('Worker Service starting...');
 
 const worker = new Worker(
   QUEUE_NAME,
-  async (bullMqJob: BullMqJob) => {
-    const data = bullMqJob.data as JobQueueData;
+  async (bullMqJob) => {
+    const data = bullMqJob.data;
     const attemptNum = bullMqJob.attemptsMade + 1;
     const startedAt = new Date();
 
@@ -31,13 +27,7 @@ const worker = new Worker(
       console.log(`[Worker] Skipping cancelled or deleted job ${data.jobId}.`);
       return;
     }
-    
 
-
-
-    // A recurring parent job remains PENDING for its next occurrence. Its
-    // execution history is captured in logs, while one-off jobs expose their
-    // lifecycle directly through Job.status.
     if (!data.isRecurring) {
       await prisma.job.update({
         where: { id: data.jobId },
@@ -50,7 +40,7 @@ const worker = new Worker(
     if (!handler) {
       const errorMsg = `No handler registered for job type: ${data.type}`;
       console.error(`[Worker] ${errorMsg}`);
-      
+
       const finishedAt = new Date();
       await prisma.executionLog.create({
         data: {
@@ -78,7 +68,7 @@ const worker = new Worker(
       const finishedAt = new Date();
 
       // 4. On success: write success log and update job status to SUCCESS
-      const successOperations: any[] = [
+      const successOperations = [
         prisma.executionLog.create({
           data: {
             jobId: data.jobId,
@@ -91,16 +81,18 @@ const worker = new Worker(
         }),
       ];
       if (!data.isRecurring) {
-        successOperations.push(prisma.job.update({
-          where: { id: data.jobId },
-          data: { status: 'SUCCESS' },
-        }));
+        successOperations.push(
+          prisma.job.update({
+            where: { id: data.jobId },
+            data: { status: 'SUCCESS' },
+          })
+        );
       }
       await prisma.$transaction(successOperations);
 
       console.log(`[Worker] Job ${data.jobId} succeeded.`);
       return output;
-    } catch (error: any) {
+    } catch (error) {
       const finishedAt = new Date();
       const errorMsg = error.message || String(error);
       console.error(`[Worker] Job ${data.jobId} failed on attempt ${attemptNum}. Error: ${errorMsg}`);
@@ -133,8 +125,6 @@ const worker = new Worker(
         }
         console.log(`[Worker] Job ${data.jobId} has exhausted all retries (${maxAttempts}). Moved to DLQ.`);
       } else {
-        // Retries left: keep as QUEUED so the scheduler doesn't re-enqueue it.
-        // BullMQ's internal retry mechanism will handle the backoff delay.
         if (!data.isRecurring) {
           await prisma.job.update({
             where: { id: data.jobId },
@@ -142,7 +132,6 @@ const worker = new Worker(
           });
         }
         console.log(`[Worker] Job ${data.jobId} will be retried by BullMQ after backoff.`);
-        // Re-throw so BullMQ triggers its internal retry/backoff
         throw error;
       }
     }
@@ -152,33 +141,27 @@ const worker = new Worker(
     concurrency: parseInt(process.env.WORKER_CONCURRENCY || '5', 10),
   }
 );
-worker.on("ready", () => {
-  console.log("✅ Worker connected to Redis");
+
+worker.on('ready', () => {
+  console.log('✅ Worker connected to Redis');
 });
 
-worker.on("active", (job) => {
-  console.log("🔥 Active:", job.id, job.name);
+worker.on('active', (job) => {
+  console.log('🔥 Active:', job.id, job.name);
 });
 
-worker.on("completed", (job) => {
-  console.log("✅ Completed:", job.id);
+worker.on('completed', (job) => {
+  console.log('✅ Completed:', job.id);
 });
 
-worker.on("error", (err) => {
-  console.error("❌ Worker error:", err);
-});
-
-worker.on("failed", (job, err) => {
-  console.log(`❌ Failed: ${job?.id} - ${err.message}`);
+worker.on('error', (err) => {
+  console.error('❌ Worker error:', err);
 });
 
 worker.on('failed', (job, err) => {
-  if (job) {
-    console.log(`[Worker Events] Job ${job.id} marked as failed by BullMQ: ${err.message}`);
-  }
+  console.log(`❌ Failed: ${job?.id} - ${err?.message}`);
 });
 
-// Handle graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('Worker Service shutting down...');
   await worker.close();
